@@ -1,28 +1,74 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Header from './components/Header';
+import TerminalHero from './components/TerminalHero';
+import StorySection from './components/StorySection';
+import EasterEggs from './components/EasterEggs';
 
-function App() {
-  const [count, setCount] = useState(0)
+const isEaster = (cmd) => ['about', 'skills', 'contact'].includes(cmd.toLowerCase());
+
+export default function App() {
+  const [accent, setAccent] = useState('#8b5cf6');
+  const [active, setActive] = useState(null); // React | Next.js | Python
+  const containerRef = useRef(null);
+
+  // Smooth scroll when a command activates
+  useEffect(() => {
+    if (active && containerRef.current) {
+      const el = document.getElementById('story');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [active]);
+
+  const handleCommand = (cmdRaw) => {
+    const cmd = cmdRaw.trim();
+    if (!cmd) return;
+    const norm = cmd.toLowerCase();
+    if (isEaster(norm)) return setActive(norm);
+
+    // Map a few common aliases
+    if (['react', 'r'].includes(norm)) return setActive('React');
+    if (['next', 'next.js', 'nextjs'].includes(norm)) return setActive('Next.js');
+    if (['python', 'py'].includes(norm)) return setActive('Python');
+
+    // Default: keep as-is with first letter capitalized
+    setActive(cmd.charAt(0).toUpperCase() + cmd.slice(1));
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">
-          Vibe Coding Platform
-        </h1>
-        <p className="text-gray-600 mb-6">
-          Your AI-powered development environment
-        </p>
-        <div className="text-center">
-          <button
-            onClick={() => setCount(count + 1)}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
-          >
-            Count is {count}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+    <div ref={containerRef} className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
+      <Header accent={accent} onAccentChange={setAccent} />
 
-export default App
+      <main className="pt-20">
+        <TerminalHero accent={accent} onCommand={handleCommand} />
+
+        <AnimatePresence mode="wait">
+          {active && !['about', 'skills', 'contact'].includes(active) && (
+            <motion.div
+              key={active + '-story'}
+              id="story"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+            >
+              <StorySection accent={accent} active={active} onNavigate={setActive} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <EasterEggs active={active} accent={accent} />
+
+        <footer className="px-6 py-12 text-center text-xs text-gray-500">
+          <div className="mx-auto max-w-3xl">
+            <div className="h-px bg-gradient-to-r from-transparent via-white/30 to-transparent mb-6" />
+            <p className="font-mono">Built with a love for clean terminals and cinematic code.</p>
+          </div>
+        </footer>
+      </main>
+
+      {/* Accent color CSS variable for subtle theming hooks */}
+      <style>{`:root { --accent:${accent}; }`}</style>
+    </div>
+  );
+}
