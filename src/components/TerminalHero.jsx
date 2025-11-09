@@ -1,114 +1,115 @@
 import { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import Spline from '@splinetool/react-spline';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CornerDownLeft } from 'lucide-react';
 
-const SUGGESTIONS = ['React', 'Next.js', 'Python'];
-const EASTER = ['about', 'skills', 'contact'];
+const initialHistory = [
+  { type: 'system', text: 'Type a command: about, skills, projects, contact, or React / Next.js / Python' },
+];
 
-export default function TerminalHero({ accent, onCommand }) {
+export default function TerminalHero({ onNavigate, onProjectSelect }) {
+  const [history, setHistory] = useState(initialHistory);
   const [input, setInput] = useState('');
-  const [history, setHistory] = useState([
-    { type: 'system', text: 'Welcome, traveler. Initializing story shell...' },
-  ]);
-  const [blink, setBlink] = useState(true);
+  const containerRef = useRef(null);
   const audioRef = useRef(null);
-  const inputRef = useRef(null);
 
   useEffect(() => {
-    const id = setInterval(() => setBlink((b) => !b), 530);
-    return () => clearInterval(id);
+    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+    audioRef.current.volume = 0.2;
   }, []);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  const playTick = () => {
-    try {
-      audioRef.current?.currentTime && (audioRef.current.currentTime = 0);
-      audioRef.current?.play();
-    } catch (e) {}
-  };
+    containerRef.current?.scrollTo({ top: containerRef.current.scrollHeight, behavior: 'smooth' });
+  }, [history]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const cmd = input.trim();
+    const cmd = input.trim().toLowerCase();
     if (!cmd) return;
 
-    setHistory((h) => [
-      ...h,
-      { type: 'user', text: cmd },
-    ]);
-
-    onCommand(cmd);
+    setHistory((h) => [...h, { type: 'user', text: input }]);
     setInput('');
+    audioRef.current?.play().catch(() => {});
+
+    if (['about', 'skills', 'projects', 'contact'].includes(cmd)) {
+      setHistory((h) => [...h, { type: 'system', text: `Navigating to ${cmd}…` }]);
+      onNavigate(cmd);
+      return;
+    }
+    if (['react', 'next.js', 'nextjs', 'python'].includes(cmd)) {
+      const key = cmd.replace('.', '');
+      onProjectSelect(key);
+      setHistory((h) => [
+        ...h,
+        { type: 'system', text: `Loading ${cmd} projects…` },
+      ]);
+      return;
+    }
+
+    setHistory((h) => [...h, { type: 'error', text: `Unknown command: ${cmd}` }]);
   };
 
   return (
-    <section className="relative min-h-[90vh] grid lg:grid-cols-2 items-stretch">
-      <div className="relative order-2 lg:order-1">
-        <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-white pointer-events-none" />
-        <Spline scene="https://prod.spline.design/VJLoxp84lCdVfdZu/scene.splinecode" style={{ width: '100%', height: '100%' }} />
+    <section id="terminal" className="relative min-h-[70vh] w-full">
+      <div className="absolute inset-0">
+        <Spline scene="https://prod.spline.design/cEecEwR6Ehj4iT8T/scene.splinecode" style={{ width: '100%', height: '100%' }} />
       </div>
 
-      <div className="order-1 lg:order-2 px-6 sm:px-10 py-24 flex flex-col justify-center">
-        <div className="bg-black rounded-xl border border-white/15 shadow-2xl overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-2 border-b border-white/10 bg-white/5">
-            <span className="h-3 w-3 rounded-full bg-red-500" />
-            <span className="h-3 w-3 rounded-full bg-yellow-500" />
-            <span className="h-3 w-3 rounded-full bg-green-500" />
-            <span className="ml-3 text-xs font-mono text-white/60">story-terminal</span>
+      <div className="relative z-10 mx-auto max-w-5xl px-4 py-12">
+        <div className="rounded-xl border border-white/10 bg-black/60 backdrop-blur-xl overflow-hidden shadow-[0_0_40px_var(--accent)]" style={{ boxShadow: `0 0 36px var(--accent)` }}>
+          <div className="px-4 py-3 flex items-center gap-2 text-white/60 text-sm border-b border-white/10">
+            <span className="w-2 h-2 rounded-full bg-red-500" />
+            <span className="w-2 h-2 rounded-full bg-yellow-500" />
+            <span className="w-2 h-2 rounded-full bg-green-500" />
+            <span className="ml-2">~/portfolio</span>
           </div>
-          <div className="p-5 sm:p-7 font-mono text-[13px] leading-relaxed text-white/90 space-y-2">
-            <div className="text-white/70">Which language would you like me to show?</div>
-            <AnimatePresence initial={false}>
-              {history.map((line, i) => (
+
+          <div ref={containerRef} className="max-h-[40vh] overflow-y-auto px-4 py-4 space-y-2 font-mono text-sm text-white/90">
+            <AnimatePresence>
+              {history.map((item, idx) => (
                 <motion.div
-                  key={i}
+                  key={idx}
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.2 }}
-                  className="whitespace-pre-wrap"
+                  className={
+                    item.type === 'user'
+                      ? 'text-white'
+                      : item.type === 'error'
+                      ? 'text-red-400'
+                      : 'text-white/80'
+                  }
                 >
-                  <span className="text-white/50">{line.type === 'user' ? '➜' : '∴'}</span>{' '}
-                  <span
-                    className={line.type === 'user' ? 'text-white' : 'text-white/80'}
-                    style={line.type === 'user' ? { color: accent } : {}}
-                  >
-                    {line.text}
-                  </span>
+                  {item.type === 'user' ? (
+                    <span className="text-[var(--accent)]">$</span>
+                  ) : (
+                    <span className="text-white/50">#</span>
+                  )}{' '}
+                  {item.text}
                 </motion.div>
               ))}
             </AnimatePresence>
-            <form onSubmit={handleSubmit} className="flex items-center gap-2 pt-2">
-              <span className="text-[12px] text-white/50">$</span>
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  playTick();
-                }}
-                placeholder={`Try ${SUGGESTIONS.join(', ')} or ${EASTER.map((e) => `"${e}"`).join(', ')}`}
-                className="flex-1 bg-transparent outline-none placeholder:text-white/30 text-white"
-              />
-              <button
-                type="submit"
-                className="px-3 py-1 rounded border border-white/20 hover:border-white/40 text-white/80 text-xs"
-                style={{ color: accent, borderColor: accent + '66' }}
-              >
-                run
-              </button>
-              <div className={`ml-1 h-4 w-[2px] ${blink ? 'opacity-100' : 'opacity-0'} bg-white`} />
-            </form>
           </div>
+
+          <form onSubmit={handleSubmit} className="px-4 py-3 border-t border-white/10 flex items-center gap-2">
+            <span className="text-[var(--accent)] font-mono">$</span>
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              className="flex-1 bg-transparent outline-none text-white placeholder-white/40 font-mono"
+              placeholder="about | skills | projects | contact | React | Next.js | Python"
+            />
+            <button
+              type="submit"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/15 border border-white/10 text-white text-sm"
+            >
+              Enter <CornerDownLeft className="w-4 h-4" />
+            </button>
+          </form>
         </div>
-        <audio ref={audioRef} src="https://assets.mixkit.co/active_storage/sfx/2001/2001-preview.mp3" preload="auto" />
-        <p className="mt-4 text-sm text-gray-600">
-          Hint: Try typing React, Next.js, Python, or Easter eggs like about, skills, contact.
-        </p>
       </div>
+
+      <div className="absolute inset-0 bg-[radial-gradient(transparent,rgba(0,0,0,0.65))] pointer-events-none" />
     </section>
   );
 }

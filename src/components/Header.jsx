@@ -1,70 +1,78 @@
-import { useEffect, useState } from 'react';
-import { Palette } from 'lucide-react';
+import { useState } from 'react';
+import { Palette, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const PALETTE = [
-  { name: 'Cyan', value: '#22d3ee' },
-  { name: 'Violet', value: '#8b5cf6' },
-  { name: 'Emerald', value: '#10b981' },
-  { name: 'Amber', value: '#f59e0b' },
-  { name: 'Rose', value: '#f43f5e' },
+  '#f97316', // orange
+  '#22d3ee', // cyan
+  '#a78bfa', // violet
+  '#34d399', // emerald
+  '#f43f5e', // rose
 ];
 
-export default function Header({ accent, onAccentChange }) {
+export default function Header({ accent, onChangeAccent }) {
   const [open, setOpen] = useState(false);
 
-  // Close on escape
-  useEffect(() => {
-    const handler = (e) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
-
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-white/40 bg-white/60 dark:bg-black/40 border-b border-white/20 dark:border-white/10">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div className="fixed top-0 left-0 right-0 z-30">
+      <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between backdrop-blur-md bg-black/30 border-b border-white/10 rounded-b-xl">
         <div className="flex items-center gap-3 select-none">
-          <div
-            className="h-3 w-3 rounded-full shadow"
-            style={{ backgroundColor: accent }}
-          />
-          <span className="font-mono text-sm tracking-tight text-gray-800 dark:text-gray-100">
-            dev@portfolio:~$
+          <Sparkles className="w-5 h-5 text-white/70" />
+          <span className="text-sm md:text-base tracking-wide text-white/80 font-medium">
+            Younes • Cinematic Terminal Portfolio
           </span>
-          <span className="font-mono text-sm text-gray-500"> story-terminal</span>
         </div>
+
         <div className="relative">
           <button
-            onClick={() => setOpen((v) => !v)}
-            className="flex items-center gap-2 px-3 py-2 rounded-md border border-white/20 hover:border-white/30 transition-colors text-gray-700 dark:text-gray-200"
-            aria-label="Change color theme"
+            className="group inline-flex items-center gap-2 px-3 py-2 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
+            onClick={() => setOpen(v => !v)}
+            aria-label="Open color palette"
           >
-            <Palette size={16} />
-            <span className="font-mono text-xs">palette</span>
+            <Palette className="w-4 h-4 text-white/80" />
+            <span className="text-sm text-white/80 hidden sm:block">Theme</span>
+            <span
+              className="w-4 h-4 rounded-full shadow-[0_0_12px_var(--accent)]"
+              style={{ background: accent, boxShadow: `0 0 16px ${accent}` }}
+            />
           </button>
-          {open && (
-            <div className="absolute right-0 mt-2 w-56 p-3 rounded-lg shadow-xl bg-white/90 dark:bg-zinc-900/90 border border-white/20">
-              <div className="grid grid-cols-5 gap-2">
-                {PALETTE.map((p) => (
-                  <button
-                    key={p.value}
-                    onClick={() => {
-                      onAccentChange(p.value);
-                      setOpen(false);
-                    }}
-                    className="h-9 rounded-md border border-white/30 hover:scale-105 transition-transform"
-                    style={{ background: p.value }}
-                    aria-label={p.name}
-                    title={p.name}
-                  />
-                ))}
-              </div>
-              <div className="mt-3 text-[11px] text-gray-500 font-mono">accent → {accent}</div>
-            </div>
-          )}
+
+          <AnimatePresence>
+            {open && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                className="absolute right-0 mt-2 p-3 rounded-lg border border-white/10 bg-black/70 backdrop-blur-xl shadow-2xl"
+              >
+                <div className="grid grid-cols-5 gap-3">
+                  {PALETTE.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => { onChangeAccent(c); setOpen(false); }}
+                      className="relative w-8 h-8 rounded-full ring-2 ring-white/10 focus:outline-none focus:ring-white/40 transition"
+                      style={{ background: c, boxShadow: `0 0 20px ${c}66` }}
+                      aria-label={`Pick ${c}`}
+                    >
+                      {accent === c && (
+                        <span className="absolute inset-0 rounded-full border-2" style={{ borderColor: 'white' }} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-2 text-xs text-white/60"
+                >
+                  Changes apply site‑wide
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
-    </header>
+    </div>
   );
 }

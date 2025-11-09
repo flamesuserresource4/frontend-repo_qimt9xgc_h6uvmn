@@ -1,74 +1,74 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import Hero from './components/Hero';
 import Header from './components/Header';
 import TerminalHero from './components/TerminalHero';
-import StorySection from './components/StorySection';
-import EasterEggs from './components/EasterEggs';
-
-const isEaster = (cmd) => ['about', 'skills', 'contact'].includes(cmd.toLowerCase());
+import Projects from './components/Projects';
+import Contact from './components/Contact';
 
 export default function App() {
-  const [accent, setAccent] = useState('#8b5cf6');
-  const [active, setActive] = useState(null); // React | Next.js | Python
-  const containerRef = useRef(null);
+  const [accent, setAccent] = useState('#f97316');
+  const [activeSection, setActiveSection] = useState('home');
+  const [projectKey, setProjectKey] = useState('react');
 
-  // Smooth scroll when a command activates
+  const projectsRef = useRef(null);
+
   useEffect(() => {
-    if (active && containerRef.current) {
-      const el = document.getElementById('story');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [active]);
+    document.documentElement.style.setProperty('--accent', accent);
+  }, [accent]);
 
-  const handleCommand = (cmdRaw) => {
-    const cmd = cmdRaw.trim();
-    if (!cmd) return;
-    const norm = cmd.toLowerCase();
-    if (isEaster(norm)) return setActive(norm);
+  useEffect(() => {
+    const title = 'Younes • Cinematic Terminal Portfolio';
+    const desc = 'A living, terminal-inspired portfolio with immersive storytelling, motion, and a Spline-powered 3D hero.';
+    document.title = title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', desc);
+  }, []);
 
-    // Map a few common aliases
-    if (['react', 'r'].includes(norm)) return setActive('React');
-    if (['next', 'next.js', 'nextjs'].includes(norm)) return setActive('Next.js');
-    if (['python', 'py'].includes(norm)) return setActive('Python');
+  const handleExplore = () => {
+    projectsRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setActiveSection('projects');
+  };
 
-    // Default: keep as-is with first letter capitalized
-    setActive(cmd.charAt(0).toUpperCase() + cmd.slice(1));
+  const handleNavigate = (cmd) => {
+    if (cmd === 'projects') handleExplore();
+    if (cmd === 'about') window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (cmd === 'skills') handleExplore();
+    if (cmd === 'contact') document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+    setActiveSection(cmd);
+  };
+
+  const onProjectSelect = (key) => {
+    setProjectKey(key.includes('next') ? 'nextjs' : key);
+    handleExplore();
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
-      <Header accent={accent} onAccentChange={setAccent} />
+    <div className="min-h-screen bg-black text-white selection:bg-[var(--accent)]/30 selection:text-white">
+      <Header accent={accent} onChangeAccent={setAccent} />
 
-      <main className="pt-20">
-        <TerminalHero accent={accent} onCommand={handleCommand} />
+      <main className="relative">
+        <Hero onExplore={handleExplore} />
 
-        <AnimatePresence mode="wait">
-          {active && !['about', 'skills', 'contact'].includes(active) && (
-            <motion.div
-              key={active + '-story'}
-              id="story"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.4 }}
-            >
-              <StorySection accent={accent} active={active} onNavigate={setActive} />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <motion.div
+          ref={projectsRef}
+          id="projects"
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="pt-6"
+        >
+          <TerminalHero onNavigate={handleNavigate} onProjectSelect={onProjectSelect} />
+          <Projects activeKey={projectKey} />
+        </motion.div>
 
-        <EasterEggs active={active} accent={accent} />
-
-        <footer className="px-6 py-12 text-center text-xs text-gray-500">
-          <div className="mx-auto max-w-3xl">
-            <div className="h-px bg-gradient-to-r from-transparent via-white/30 to-transparent mb-6" />
-            <p className="font-mono">Built with a love for clean terminals and cinematic code.</p>
-          </div>
-        </footer>
+        <Contact />
       </main>
 
-      {/* Accent color CSS variable for subtle theming hooks */}
-      <style>{`:root { --accent:${accent}; }`}</style>
+      <footer className="py-8 text-center text-white/50">
+        <span>© {new Date().getFullYear()} Younes. Crafted with motion and code.</span>
+      </footer>
     </div>
   );
 }
