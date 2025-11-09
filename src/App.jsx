@@ -1,74 +1,89 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
-import Hero from './components/Hero';
+import { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Header from './components/Header';
-import TerminalHero from './components/TerminalHero';
+import Hero from './components/Hero';
 import Projects from './components/Projects';
 import Contact from './components/Contact';
 
 export default function App() {
   const [accent, setAccent] = useState('#f97316');
-  const [activeSection, setActiveSection] = useState('home');
-  const [projectKey, setProjectKey] = useState('react');
-
-  const projectsRef = useRef(null);
+  const [active, setActive] = useState(null); // React | Next.js | Python or easter commands
+  const containerRef = useRef(null);
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--accent', accent);
-  }, [accent]);
+    if (active && containerRef.current) {
+      if (!['about', 'skills', 'contact'].includes(active)) {
+        document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [active]);
 
-  useEffect(() => {
-    const title = 'Younes • Cinematic Terminal Portfolio';
-    const desc = 'A living, terminal-inspired portfolio with immersive storytelling, motion, and a Spline-powered 3D hero.';
-    document.title = title;
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', desc);
-  }, []);
+  const handleCommand = (cmdRaw) => {
+    const cmd = cmdRaw.trim();
+    if (!cmd) return;
+    const norm = cmd.toLowerCase();
 
-  const handleExplore = () => {
-    projectsRef.current?.scrollIntoView({ behavior: 'smooth' });
-    setActiveSection('projects');
+    if (['projects', 'project'].includes(norm)) {
+      document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    if (['about', 'skills', 'contact'].includes(norm)) {
+      setActive(norm);
+      const id = norm === 'contact' ? 'contact' : 'home';
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+
+    if (['react', 'r'].includes(norm)) return setActive('React');
+    if (['next', 'next.js', 'nextjs'].includes(norm)) return setActive('Next.js');
+    if (['python', 'py'].includes(norm)) return setActive('Python');
+
+    setActive(cmd.charAt(0).toUpperCase() + cmd.slice(1));
   };
 
-  const handleNavigate = (cmd) => {
-    if (cmd === 'projects') handleExplore();
-    if (cmd === 'about') window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (cmd === 'skills') handleExplore();
-    if (cmd === 'contact') document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
-    setActiveSection(cmd);
-  };
-
-  const onProjectSelect = (key) => {
-    setProjectKey(key.includes('next') ? 'nextjs' : key);
-    handleExplore();
-  };
+  const onCta = () => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' });
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-[var(--accent)]/30 selection:text-white">
+    <div ref={containerRef} className="min-h-screen bg-black text-white">
       <Header accent={accent} onChangeAccent={setAccent} />
 
-      <main className="relative">
-        <Hero onExplore={handleExplore} />
+      {/* Accent color CSS variable global hook */}
+      <style>{`:root { --accent:${accent}; }`}</style>
 
-        <motion.div
-          ref={projectsRef}
-          id="projects"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="pt-6"
-        >
-          <TerminalHero onNavigate={handleNavigate} onProjectSelect={onProjectSelect} />
-          <Projects activeKey={projectKey} />
-        </motion.div>
+      <main className="pt-16">
+        <Hero onCta={onCta} accent={accent} />
 
-        <Contact />
+        <Projects accent={accent} onCommand={handleCommand} />
+
+        <AnimatePresence mode="wait">
+          {active && ['about', 'skills'].includes(active) && (
+            <motion.section
+              key={active}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.35 }}
+              className="mx-auto max-w-3xl px-6 py-12"
+            >
+              <h3 className="font-mono text-2xl"><span style={{ color: accent }}>{active === 'about' ? 'About' : 'Skills'}</span></h3>
+              <p className="mt-2 text-white/80">
+                {active === 'about'
+                  ? 'I craft interactive experiences that feel alive. My toolkit spans React, Next.js, and Python APIs — stitched with thoughtful design and motion.'
+                  : 'Frontend: React, Next.js, Tailwind, Framer Motion. Backend: FastAPI, Node. Infra: Docker, Vercel. Extras: Design systems and accessibility.'}
+              </p>
+            </motion.section>
+          )}
+        </AnimatePresence>
+
+        <Contact accent={accent} />
+
+        <footer className="px-6 py-12 text-center text-xs text-white/60">
+          <div className="mx-auto max-w-3xl">
+            <div className="h-px bg-gradient-to-r from-transparent via-white/30 to-transparent mb-6" />
+            <p className="font-mono">Built with a love for clean terminals and cinematic code.</p>
+          </div>
+        </footer>
       </main>
-
-      <footer className="py-8 text-center text-white/50">
-        <span>© {new Date().getFullYear()} Younes. Crafted with motion and code.</span>
-      </footer>
     </div>
   );
 }
